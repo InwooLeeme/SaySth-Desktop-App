@@ -5,57 +5,76 @@ const playBtn = document.getElementById("audioBtn");
 
 let onRecording = false;
 let audioChunk = [];
+let mediaRecoder;
 
 const AudioType = "audio/wav";
+
+const TEXTPOSTURL = ``;
 
 /* 
 사용자 입력
 */
-user_input.addEventListener("keydown", function (e) {
+user_input.addEventListener("keydown", async function (e) {
   if (e.key == "Enter" && user_input.value.trim() !== "") {
     const userMessage = user_input.value.trim();
     console.log(userMessage);
+    try{
+      const res = await fetch(TEXTPOSTURL, {
+        method : 'POST',
+        headers: {
+          "Content-Type": "application/json"   // JSON임을 명시
+        },
+        body: JSON.stringify(userMessage)
+      });
+      const data = await res.json();
+      console.log(`Response : ${data}`);
+      
+    } catch(e){
+      console.error(`${e}`);
+      
+    }
   }
 });
 
-let mediaRecoder;
-
-navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-  mediaRecoder = new MediaRecorder(stream);
-
-  mediaRecoder.addEventListener("dataavailable", (e) => {
-    if (e.data && e.data.size > 0) {
-      audioChunk.push(e.data);
-      console.log(`수집 완료`);
-    }
-  });
-
-  mediaRecoder.addEventListener("stop", () => {
-    const audioBlob = new Blob([audioChunk], { type: AudioType });
-    console.log(audioChunk.length);
-    console.log(audioBlob);
-
-    // audio chuck 초기화
-
-    /* Test */
-    const audioURL = URL.createObjectURL(audioBlob);
-    console.log(audioURL);
-
-    const reader = new FileReader();
-    reader.readAsDataURL(audioBlob);
-    reader.onloadend = function () {
-      const base64data = reader.result;
-      try {
-        localStorage.setItem("recorded file", base64data);
-        console.log(`저장 완료`, base64data);
-      } catch (e) {
-        console.log(`저장 실패`, e);
-      }
-    };
+async function startRecording() {
+  micIcon.innerHTML = `<i class="fa-solid fa-bars-staggered"></i>`;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecoder = new MediaRecorder(stream);
     audioChunk = [];
-    // file 전송
-  });
-});
+
+    mediaRecoder.ondataavailable = function (event) {
+      audioChunk.push(event.data);
+    };
+
+    mediaRecoder.onstop = function () {
+      const audioblob = new Blob(audioChunk, { type: AudioType });
+      audioChunk = []; // 청크 초기화
+      const reader = new FileReader();
+      const audioURL = URL.createObjectURL(audioblob);
+      reader.readAsDataURL(audioblob);
+      audioSoruce = document.getElementById("audioSource");
+      audioSoruce.src = audioURL;
+      console.log(audioURL);
+      
+      reader.onload = function () {
+        const base64audio = reader.result;
+        localStorage.setItem("recorded file", base64audio);
+      };
+    };
+    onRecording = true;
+    mediaRecoder.start();
+  } catch (e) {
+    console.log(`마이크 접근 오류 ${e}`);
+  }
+}
+
+function stopRecording() {
+  /* 녹음 중 일 때 */
+  mediaRecoder.stop();
+  onRecording = false;  
+  micIcon.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+}
 
 /* 
 마이크 아이콘 선택 시
@@ -63,26 +82,18 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 micIcon.addEventListener("click", (e) => {
   if (onRecording === false) {
     // 마이크 버튼을 처음 눌렀을 시
-    onRecording = true;
-    mediaRecoder.start();
-    console.log(`녹음 시작`);
-  } else {
-    /* 녹음 중 일 때 */
-    mediaRecoder.stop();
-    onRecording = false;
-    console.log(`녹음 중지 및 오디오 청크 초기화 후 전송 시작`);
-  }
+    startRecording();
+  } else stopRecording();
 });
 
 playBtn.addEventListener("click", () => {
   const storedAudio = localStorage.getItem("recorded file");
-  console.log(storedAudio);
 
   if (storedAudio) {
     const source = document.getElementById("audioSource");
     source.src = storedAudio;
     audioPlayer.play();
   } else {
-    console.log(`음성 파일 없음`);
+    console.error(`음성 파일 없음`);
   }
 });
