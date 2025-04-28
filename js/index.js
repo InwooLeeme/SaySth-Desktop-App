@@ -1,7 +1,5 @@
 const user_input = document.querySelector(".user_input");
 const micIcon = document.querySelector(".mic-icon");
-const audioPlayer = document.getElementById("audioPlayer");
-const playBtn = document.getElementById("audioBtn");
 
 let onRecording = false;
 let audioChunk = [];
@@ -9,7 +7,7 @@ let mediaRecoder;
 
 const AudioType = "audio/wav";
 
-const TEXTPOSTURL = ``;
+const TEXTPOSTURL = `https://526b-59-1-100-185.ngrok-free.app/receive-text`;
 
 /* 
 사용자 입력
@@ -24,20 +22,22 @@ user_input.addEventListener("keydown", async function (e) {
         headers: {
           "Content-Type": "application/json"   // JSON임을 명시
         },
-        body: JSON.stringify(userMessage)
+        body: JSON.stringify({"text": userMessage })
       });
+      console.log(JSON.stringify({"text": userMessage }));
+      
       const data = await res.json();
       console.log(`Response : ${data}`);
-      
+      user_input.value = "";
     } catch(e){
       console.error(`${e}`);
-      
     }
   }
 });
 
 async function startRecording() {
   micIcon.innerHTML = `<i class="fa-solid fa-bars-staggered"></i>`;
+  micIcon.classList.add('rainbow');
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecoder = new MediaRecorder(stream);
@@ -73,6 +73,7 @@ function stopRecording() {
   /* 녹음 중 일 때 */
   mediaRecoder.stop();
   onRecording = false;  
+  micIcon.classList.remove('rainbow');
   micIcon.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
 }
 
@@ -80,12 +81,15 @@ function stopRecording() {
 마이크 아이콘 선택 시
 */
 micIcon.addEventListener("click", (e) => {
+  // 마이크 버튼을 처음 눌렀을 시
   if (onRecording === false) {
-    // 마이크 버튼을 처음 눌렀을 시
     startRecording();
-  } else stopRecording();
+  } else{    
+    stopRecording();
+  }
 });
 
+/*
 playBtn.addEventListener("click", () => {
   const storedAudio = localStorage.getItem("recorded file");
 
@@ -97,3 +101,4 @@ playBtn.addEventListener("click", () => {
     console.error(`음성 파일 없음`);
   }
 });
+*/
