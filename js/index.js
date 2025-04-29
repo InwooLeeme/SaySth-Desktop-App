@@ -6,9 +6,10 @@ let onRecording = false;
 let audioChunk = [];
 let mediaRecoder;
 
-const AudioType = "audio/wav";
+const AudioType = 'audio/wav';
 
 const TEXTPOSTURL = `https://526b-59-1-100-185.ngrok-free.app/receive-text`;
+const AUDIOPOSTURL = ``;
 
 /* 
 사용자 입력
@@ -36,6 +37,11 @@ user_input.addEventListener("keydown", async function (e) {
   }
 });
 
+async function urlToblob(audioUrl) {
+  const res = await fetch(audioUrl);
+  return await res.blob();
+}
+
 async function startRecording() {
   micIcon.innerHTML = `<i class="fa-solid fa-bars-staggered"></i>`;
   micIcon.classList.add('rainbow');
@@ -54,9 +60,22 @@ async function startRecording() {
       const reader = new FileReader();
       const audioURL = URL.createObjectURL(audioblob);
       reader.readAsDataURL(audioblob);
-      audioSoruce = document.getElementById("audioSource");
-      audioSoruce.src = audioURL;
       console.log(audioURL);
+
+      const blob = urlToblob(audioURL);
+
+      const wavFile = new File([blob], 'voice_file.wav', {type : AudioType});
+
+      const formData = new FormData();
+      formData.append('file', wavFile);
+      console.log(wavFile);
+      /* for debug */
+      /* let entries = formData.entries();
+      for (const pair of entries) {
+          console.log(pair[0]+ ', ' + pair[1]); 
+      } */
+      
+      // post to FastAPI
       
       reader.onload = function () {
         const base64audio = reader.result;
