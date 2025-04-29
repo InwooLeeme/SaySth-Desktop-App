@@ -1,3 +1,4 @@
+/* Server Side */
 const { app, BrowserWindow } = require("electron");
 
 const { spawn } = require('child_process');

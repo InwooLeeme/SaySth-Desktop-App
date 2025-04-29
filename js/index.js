@@ -1,3 +1,4 @@
+/* Client Side */
 const user_input = document.querySelector(".user_input");
 const micIcon = document.querySelector(".mic-icon");
 
